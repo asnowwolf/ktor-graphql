@@ -16,23 +16,26 @@ import io.ktor.http.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.util.*
+import org.dataloader.DataLoaderFactory
 import org.dataloader.DataLoaderRegistry
 
 class GraphQLFeature(configuration: Configuration) {
     val queries = configuration.queries
     val mutations = configuration.mutations
-    val dataLoaders = configuration.dataLoaders
+    val batchLoaders = configuration.batchLoaders
     val contextGenerator = configuration.contextGenerator
     val graphQLEndpoint = configuration.graphQLEndpoint
     val subscriptionsEndPoint = configuration.subscriptionsEndpoint
+    val mapper = configuration.mapper
 
     class Configuration {
         var queries: List<Query> = emptyList()
         var mutations: List<Mutation> = emptyList()
-        var dataLoaders: List<KotlinDataLoader<*, *>> = emptyList()
+        var batchLoaders: List<KtorBatchLoader<*, *>> = emptyList()
         var graphQLEndpoint = "graphql"
         var subscriptionsEndpoint = "subscriptions"
         var contextGenerator: (request: ApplicationRequest) -> GraphQLContext? = { null }
+        var mapper = jacksonObjectMapper()
     }
 
     companion object Feature : ApplicationFeature<ApplicationCallPipeline, Configuration, GraphQLFeature> {
@@ -43,12 +46,11 @@ class GraphQLFeature(configuration: Configuration) {
             val configuration = Configuration().apply(configure)
             val feature = GraphQLFeature(configuration)
 
-            val mapper = jacksonObjectMapper()
             val requestParser = object : GraphQLRequestParser<ApplicationRequest> {
                 override suspend fun parseRequest(request: ApplicationRequest): GraphQLServerRequest = try {
                     val rawRequest = request.call.receiveText()
                     @Suppress("BlockingMethodInNonBlockingContext")
-                    mapper.readValue(rawRequest, GraphQLServerRequest::class.java)
+                    feature.mapper.readValue(rawRequest, GraphQLServerRequest::class.java)
                 } catch (e: JsonMappingException) {
                     e.printStackTrace()
                     throw BadRequestException("Invalid json format")
@@ -60,13 +62,15 @@ class GraphQLFeature(configuration: Configuration) {
             val dataLoaderRegistryFactory = object : DataLoaderRegistryFactory {
                 override fun generate(): DataLoaderRegistry {
                     val registry = DataLoaderRegistry()
-                    feature.dataLoaders.forEach {
-                        registry.register(it.dataLoaderName, it.getDataLoader())
+                    feature.batchLoaders.forEach {
+                        registry.register(it::class.qualifiedName,
+                            DataLoaderFactory.newDataLoader(KtorBatchLoaderAdaptor(it))
+                        )
                     }
                     return registry
                 }
             }
-            val supportedPackages = (feature.queries + feature.mutations).map { it.javaClass.`package`.name }.distinct()
+            val supportedPackages = (feature.queries + feature.mutations).map { it::class.java.packageName }.distinct()
             val schema = toSchema(
                 SchemaGeneratorConfig(supportedPackages),
                 feature.queries.map { TopLevelObject(it) },
@@ -76,7 +80,7 @@ class GraphQLFeature(configuration: Configuration) {
                 override suspend fun generateContextMap(request: ApplicationRequest): Map<*, Any>? {
                     val result = feature.contextGenerator(request)
                     return result?.let {
-                        val props = result.javaClass.fields.associateBy { it.name }
+                        val props = result::class.java.fields.associateBy { it.name }
                         return props.keys.associateWith {
                             props[it]?.get(it)
                                 ?: throw KotlinNullPointerException("$it in GraphQLContext cannot be null")
@@ -84,8 +88,8 @@ class GraphQLFeature(configuration: Configuration) {
                     }
                 }
 
-                override suspend fun generateContext(request: ApplicationRequest): GraphQLContext {
-                    return feature.contextGenerator(request) ?: object : GraphQLContext {}
+                override suspend fun generateContext(request: ApplicationRequest): GraphQLContext? {
+                    return feature.contextGenerator(request)
                 }
             }
 
@@ -108,7 +112,7 @@ class GraphQLFeature(configuration: Configuration) {
                     val result = server.execute(call.request) ?: throw BadRequestException("Invalid GraphQL request")
 
                     @Suppress("BlockingMethodInNonBlockingContext")
-                    val json = mapper.writeValueAsString(result)
+                    val json = feature.mapper.writeValueAsString(result)
                     call.respondText(json, ContentType.Application.Json)
                 } else if (call.request.httpMethod == HttpMethod.Get && call.request.uri == "/playground") {
                     call.respondText(buildPlaygroundHtml(), ContentType.Text.Html)

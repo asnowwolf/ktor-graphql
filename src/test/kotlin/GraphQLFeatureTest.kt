@@ -1,9 +1,9 @@
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
-import schema.GroupDataLoader
+import schema.GroupBatchLoader
 import schema.GroupQuery
-import schema.UserDataLoader
+import schema.UserBatchLoader
 import schema.UserQuery
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -37,7 +37,7 @@ class GraphQLFeatureTest {
             }).apply {
                 assertEquals(HttpStatusCode.OK, response.status())
                 assertEquals(ContentType.Application.Json, response.contentType().withoutParameters())
-                assertEquals("""{"data":{"users":[{"id":"11","name":"中文1"},{"id":"12","name":"user2"},{"id":"21","name":"中文2"},{"id":"22","name":"user2"}]}}""",
+                assertEquals("""{"data":{"users":[{"id":"11","name":"中文1"},{"id":"12","name":"user2"},{"id":"21","name":"中文2"},{"id":"22","name":"user2"},{"id":"32","name":"user3"}]}}""",
                     response.content)
             }
         }
@@ -48,6 +48,7 @@ class GraphQLFeatureTest {
         withTestApplication({
             install(GraphQLFeature) {
                 queries = listOf(UserQuery())
+                batchLoaders = listOf(GroupBatchLoader())
             }
         }) {
             handleRequest(HttpMethod.Post, "/graphql", setup = {
@@ -55,7 +56,7 @@ class GraphQLFeatureTest {
             }).apply {
                 assertEquals(HttpStatusCode.OK, response.status())
                 assertEquals(ContentType.Application.Json, response.contentType().withoutParameters())
-                assertEquals("""{"data":{"users":[{"id":"11","name":"中文1","group":{"id":"1","name":"group1"}},{"id":"12","name":"user2","group":{"id":"1","name":"group1"}},{"id":"21","name":"中文2","group":{"id":"2","name":"group2"}},{"id":"22","name":"user2","group":{"id":"2","name":"group2"}}]}}""",
+                assertEquals("""{"data":{"users":[{"id":"11","name":"中文1","group":{"id":"1","name":"group1"}},{"id":"12","name":"user2","group":{"id":"1","name":"group1"}},{"id":"21","name":"中文2","group":{"id":"2","name":"group2"}},{"id":"22","name":"user2","group":{"id":"2","name":"group2"}},{"id":"32","name":"user3","group":null}]}}""",
                     response.content)
             }
         }
@@ -66,7 +67,7 @@ class GraphQLFeatureTest {
         withTestApplication({
             install(GraphQLFeature) {
                 queries = listOf(UserQuery())
-                dataLoaders = listOf(GroupDataLoader)
+                batchLoaders = listOf(GroupBatchLoader(), UserBatchLoader())
             }
         }) {
             handleRequest(HttpMethod.Post, "/graphql", setup = {
@@ -74,7 +75,7 @@ class GraphQLFeatureTest {
             }).apply {
                 assertEquals(HttpStatusCode.OK, response.status())
                 assertEquals(ContentType.Application.Json, response.contentType().withoutParameters())
-                assertEquals("""{"data":{"users":[{"id":"11","name":"中文1","group":{"id":"1","name":"group1"}},{"id":"12","name":"user2","group":{"id":"1","name":"group1"}},{"id":"21","name":"中文2","group":{"id":"2","name":"group2"}},{"id":"22","name":"user2","group":{"id":"2","name":"group2"}}]}}""",
+                assertEquals("""{"data":{"users":[{"id":"11","name":"中文1","group":{"id":"1","name":"group1"}},{"id":"12","name":"user2","group":{"id":"1","name":"group1"}},{"id":"21","name":"中文2","group":{"id":"2","name":"group2"}},{"id":"22","name":"user2","group":{"id":"2","name":"group2"}},{"id":"32","name":"user3","group":null}]}}""",
                     response.content)
             }
         }
@@ -85,7 +86,7 @@ class GraphQLFeatureTest {
         withTestApplication({
             install(GraphQLFeature) {
                 queries = listOf(GroupQuery())
-                dataLoaders = listOf(UserDataLoader)
+                batchLoaders = listOf(UserBatchLoader())
             }
         }) {
             handleRequest(HttpMethod.Post, "/graphql", setup = {
