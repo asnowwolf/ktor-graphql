@@ -1,10 +1,7 @@
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
-import schema.GroupBatchLoader
-import schema.GroupQuery
-import schema.UserBatchLoader
-import schema.UserQuery
+import schema.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -98,5 +95,25 @@ class GraphQLFeatureTest {
                     response.content)
             }
         }
+    }
+
+    @Test
+    fun mutation() {
+        withTestApplication({
+            install(GraphQLFeature) {
+                queries = listOf(UserQuery())
+                mutations = listOf(UserMutation())
+            }
+        }) {
+            handleRequest(HttpMethod.Post, "/graphql", setup = {
+                setBody("""{"operationName":null,"variables":{"user":{"name": "user4"}},"query":"mutation(${'$'}user: UserInput!) {\n  createUser(user: ${'$'}user) {\n    id\n  }\n}\n"}""")
+            }).apply {
+                assertEquals(HttpStatusCode.OK, response.status())
+                assertEquals(ContentType.Application.Json, response.contentType().withoutParameters())
+                assertEquals("""{"data":{"createUser":{"id":"5"}}}""",
+                    response.content)
+            }
+        }
+
     }
 }
