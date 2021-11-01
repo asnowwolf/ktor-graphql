@@ -6,7 +6,7 @@ plugins {
     `maven-publish`
 }
 group = "wang.ralph.common"
-version = "1.0-SNAPSHOT"
+version = "2.0.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -19,10 +19,12 @@ java {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation("io.ktor:ktor-server-core:$ktor_version")
-    implementation("com.expediagroup:graphql-kotlin-server:5.2.0")
+    implementation("com.expediagroup:graphql-kotlin-schema-generator:5.2.0")
 
+    testImplementation("io.ktor:ktor-jackson:$ktor_version")
     testImplementation("io.ktor:ktor-server-tests:$ktor_version")
     testImplementation("org.jetbrains.kotlin:kotlin-test:$kotlin_version")
+    testImplementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.0")
 }
 
 publishing {
