@@ -6,21 +6,24 @@ import com.expediagroup.graphql.generator.toSchema
 import graphql.ExecutionInput
 import graphql.GraphQL
 import graphql.schema.DataFetchingEnvironment
+import graphql.schema.GraphQLScalarType
 import io.ktor.application.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
+import kotlin.reflect.KClass
 
 lateinit var gql: GraphQL
 
 fun Application.configureGraphQL(
     packageNames: List<String>,
-    queries: List<Query> = emptyList(),
-    mutations: List<Mutation> = emptyList(),
+    queries: List<Any> = emptyList(),
+    mutations: List<Any> = emptyList(),
+    scalars: Map<KClass<*>, GraphQLScalarType> = Scalars.all,
     graphQLUri: String = "/graphql",
 ) {
     gql = GraphQL.newGraphQL(toSchema(
-        SchemaGeneratorConfig(packageNames),
+        SchemaGeneratorConfig(supportedPackages = packageNames, hooks = KtorSchemaGeneratorHooks(scalars)),
         queries.map { TopLevelObject(it) },
         mutations.map { TopLevelObject(it) },
     )).build()

@@ -1,20 +1,20 @@
 package wang.ralph.graphql
 
-import com.expediagroup.graphql.generator.scalars.ID
+import com.expediagroup.graphql.generator.exceptions.TypeNotSupportedException
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.http.*
 import io.ktor.jackson.*
 import io.ktor.server.testing.*
-import wang.ralph.graphql.models.Group
-import wang.ralph.graphql.models.User
+import wang.ralph.graphql.schema.LogQuery
 import wang.ralph.graphql.schema.UserMutation
 import wang.ralph.graphql.schema.UserQuery
-import wang.ralph.graphql.schema.groups
-import wang.ralph.graphql.schema.users
+import java.text.SimpleDateFormat
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class GraphQLFeatureTest {
@@ -50,10 +50,58 @@ class GraphQLFeatureTest {
             ).apply {
                 assertEquals(HttpStatusCode.OK, response.status())
                 assertEquals(ContentType.Application.Json, response.contentType().withoutParameters())
-                data class Payload(var users: List<User> = emptyList())
+                assertEquals("""{"data":{"users":[{"id":"11","name":"中文1","groupId":"1"},{"id":"12","name":"user2","groupId":"1"},{"id":"21","name":"中文2","groupId":"2"},{"id":"21","name":"user2","groupId":"2"},{"id":"31","name":"user3","groupId":"3"}]}}""",
+                    response.content)
+            }
+        }
+    }
 
-                val payload = Payload(users)
-                assertEquals(mapper.writePayload(payload), response.content)
+    @Test
+    fun predefinedCustomDataType() {
+        withTestApplication({
+            configureSerialization()
+            configureGraphQL(
+                packageNames = listOf(GraphQLFeatureTest::class.java.packageName),
+                queries = listOf(LogQuery()),
+            )
+        }) {
+            sendGraphQLQuery("""{
+                    |  latestLog {
+                    |       uuid
+                    |       instant
+                    |       date
+                    |       calendar
+                    |       bigDecimal
+                    |       bigInteger
+                    |  }
+                    |}"""
+            ).apply {
+                assertEquals(HttpStatusCode.OK, response.status())
+                assertEquals(ContentType.Application.Json, response.contentType().withoutParameters())
+                assertEquals("""{"data":{"latestLog":{"uuid":"11111111-1111-1111-1111-111111111111","instant":"2000-01-01T00:00:00Z","date":"2000-01-01T00:00:00Z","calendar":"2000-01-01T00:00:00Z","bigDecimal":"1.0","bigInteger":"110181837737166161633331111111111"}}}""",
+                    response.content)
+            }
+        }
+    }
+
+    @Test
+    fun missingCustomDataTypes() {
+        assertFailsWith(TypeNotSupportedException::class) {
+            withTestApplication({
+                configureSerialization()
+                configureGraphQL(
+                    packageNames = listOf(GraphQLFeatureTest::class.java.packageName),
+                    queries = listOf(LogQuery()),
+                    scalars = emptyMap()
+                )
+            }) {
+                sendGraphQLQuery("""{
+                    |  latestLog {
+                    |       id
+                    |       time
+                    |  }
+                    |}"""
+                )
             }
         }
     }
@@ -80,20 +128,14 @@ class GraphQLFeatureTest {
             ).apply {
                 assertEquals(HttpStatusCode.OK, response.status())
                 assertEquals(ContentType.Application.Json, response.contentType().withoutParameters())
-
-                data class UserDto(val id: ID?, val name: String, val group: Group?)
-                data class Payload(val users: List<UserDto> = emptyList())
-
-                val payload = Payload(users.map {
-                    UserDto(it.id, it.name, groups.find { group -> group.id == it.groupId })
-                })
-                assertEquals(mapper.writePayload(payload), response.content)
+                assertEquals("""{"data":{"users":[{"id":"11","name":"中文1","group":{"id":"1","name":"group1"}},{"id":"12","name":"user2","group":{"id":"1","name":"group1"}},{"id":"21","name":"中文2","group":{"id":"2","name":"group2"}},{"id":"21","name":"user2","group":{"id":"2","name":"group2"}},{"id":"31","name":"user3","group":null}]}}""",
+                    response.content)
             }
         }
     }
 
     @Test
-    fun queryWithRequestHeader() {
+    fun queryByRequestHeader() {
         withTestApplication({
             configureSerialization()
             configureGraphQL(
@@ -113,11 +155,8 @@ class GraphQLFeatureTest {
             ).apply {
                 assertEquals(HttpStatusCode.OK, response.status())
                 assertEquals(ContentType.Application.Json, response.contentType().withoutParameters())
-                data class UserDto(val id: ID?, val name: String, val token: String)
-                data class Payload(val users: List<UserDto>)
-
-                val payload = Payload(users.map { UserDto(it.id, it.name, "SECRET") })
-                assertEquals(mapper.writePayload(payload), response.content)
+                assertEquals("""{"data":{"users":[{"id":"11","name":"中文1","token":"SECRET"},{"id":"12","name":"user2","token":"SECRET"},{"id":"21","name":"中文2","token":"SECRET"},{"id":"21","name":"user2","token":"SECRET"},{"id":"31","name":"user3","token":"SECRET"}]}}""",
+                    response.content)
             }
         }
     }
@@ -142,11 +181,7 @@ class GraphQLFeatureTest {
             ).apply {
                 assertEquals(HttpStatusCode.OK, response.status())
                 assertEquals(ContentType.Application.Json, response.contentType().withoutParameters())
-                data class UserDto(val id: String)
-                data class Payload(val createUser: UserDto)
-
-                val payload = Payload(UserDto("9"))
-                assertEquals(mapper.writePayload(payload), response.content)
+                assertEquals("""{"data":{"createUser":{"id":"9"}}}""", response.content)
             }
         }
     }
@@ -160,24 +195,19 @@ private fun Application.configureSerialization() {
 }
 
 val mapper = ObjectMapper()
-
-private fun <T> ObjectMapper.writePayload(payload: T): String {
-    return writeValueAsString(GraphQLResponse(payload))
-}
+    .registerModule(JavaTimeModule())
+    .setDateFormat(SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ"))
 
 private fun TestApplicationRequest.setGraphQLQuery(query: String, variables: Map<String, Any>) {
     addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
     setBody(mapper.writeValueAsString(GraphQLRequest(query = query.trimMargin(), variables = variables)))
 }
 
-data class GraphQLResponse<Payload>(var data: Payload? = null)
-
 fun TestApplicationEngine.sendGraphQLQuery(
     query: String,
     variables: Map<String, Any> = emptyMap(),
     headers: Headers = Headers.Empty,
-) =
-    handleRequest(HttpMethod.Post, "/graphql", setup = {
-        setGraphQLQuery(query, variables)
-        headers.forEach { name, values -> values.forEach { value -> addHeader(name, value) } }
-    })
+) = handleRequest(HttpMethod.Post, "/graphql", setup = {
+    setGraphQLQuery(query, variables)
+    headers.forEach { name, values -> values.forEach { value -> addHeader(name, value) } }
+})
