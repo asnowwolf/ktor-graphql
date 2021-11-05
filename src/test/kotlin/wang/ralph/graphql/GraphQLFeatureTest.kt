@@ -15,7 +15,6 @@ import java.text.SimpleDateFormat
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertTrue
 
 class GraphQLFeatureTest {
     @Test
@@ -26,7 +25,9 @@ class GraphQLFeatureTest {
             handleRequest(HttpMethod.Get, "/playground").apply {
                 assertEquals(HttpStatusCode.OK, response.status())
                 assertEquals(ContentType.Text.Html, response.contentType().withoutParameters())
-                assertTrue(response.content!!.startsWith("<!DOCTYPE html>\n<html>"))
+                assertEquals(GraphQLFeatureTest::class.java.getResourceAsStream("playground-expected.html")!!
+                    .reader(Charsets.UTF_8)
+                    .readText(), response.content)
             }
         }
     }
