@@ -7,7 +7,7 @@ plugins {
     signing
 }
 group = "wang.ralph.common"
-version = "2.2.0-SNAPSHOT"
+version = "2.3.0-SNAPSHOT"
 
 repositories {
     mavenLocal()
@@ -79,7 +79,7 @@ publishing {
     }
     repositories {
         maven {
-            url = uri(project.property("sonatype.release-url") as String)
+            url = uri(project.property("sonatype.snapshot-url") as String)
             authentication {
                 create<BasicAuthentication>("basic")
             }

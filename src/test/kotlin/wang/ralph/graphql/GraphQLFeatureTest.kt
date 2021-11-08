@@ -7,6 +7,7 @@ import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.http.*
 import io.ktor.jackson.*
+import io.ktor.routing.*
 import io.ktor.server.testing.*
 import wang.ralph.graphql.schema.LogQuery
 import wang.ralph.graphql.schema.UserMutation
@@ -20,7 +21,9 @@ class GraphQLFeatureTest {
     @Test
     fun fetchPlaygroundHtml() {
         withTestApplication({
-            configureGraphQLPlayground()
+            routing {
+                graphqlPlayground()
+            }
         }) {
             handleRequest(HttpMethod.Get, "/playground").apply {
                 assertEquals(HttpStatusCode.OK, response.status())
@@ -40,6 +43,10 @@ class GraphQLFeatureTest {
                 packageNames = listOf(GraphQLFeatureTest::class.java.packageName),
                 queries = listOf(UserQuery()),
             )
+            routing {
+                graphqlSchema()
+                graphql()
+            }
         }) {
             sendGraphQLQuery("""{
                     |  users {
@@ -65,6 +72,10 @@ class GraphQLFeatureTest {
                 packageNames = listOf(GraphQLFeatureTest::class.java.packageName),
                 queries = listOf(LogQuery()),
             )
+            routing {
+                graphqlSchema()
+                graphql()
+            }
         }) {
             sendGraphQLQuery("""{
                     |  latestLog {
@@ -95,6 +106,10 @@ class GraphQLFeatureTest {
                     queries = listOf(LogQuery()),
                     scalars = emptyMap()
                 )
+                routing {
+                    graphqlSchema()
+                    graphql()
+                }
             }) {
                 sendGraphQLQuery("""{
                     |  latestLog {
@@ -115,6 +130,10 @@ class GraphQLFeatureTest {
                 packageNames = listOf(GraphQLFeatureTest::class.java.packageName),
                 queries = listOf(UserQuery()),
             )
+            routing {
+                graphqlSchema()
+                graphql()
+            }
         }) {
             sendGraphQLQuery("""{
                     |  users {
@@ -143,6 +162,10 @@ class GraphQLFeatureTest {
                 packageNames = listOf(GraphQLFeatureTest::class.java.packageName),
                 queries = listOf(UserQuery()),
             )
+            routing {
+                graphqlSchema()
+                graphql()
+            }
         }) {
             sendGraphQLQuery(
                 """{
@@ -171,6 +194,10 @@ class GraphQLFeatureTest {
                 queries = listOf(UserQuery()),
                 mutations = listOf(UserMutation()),
             )
+            routing {
+                graphqlSchema()
+                graphql()
+            }
         }) {
             sendGraphQLQuery(
                 query = """mutation(${'$'}user: UserInput!) {

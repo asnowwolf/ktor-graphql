@@ -30,17 +30,23 @@ embeddedServer(Netty) {
         mutations = listOf(UserMutation()),
         // TODO: could be changed to your custom scalar map
         scalars = Scalars.all, // (default)
-        // TODO: could be changed to your custom `/graphql` uri
-        graphQLUri = "/graphql", // (default)
     )
     configureMonitoring()
     // Currently, only the `jackson` can be used as serializer
     configureSerialization()
+    configureRouting()
 }.start(wait = true)
 
 fun Application.configureSerialization() {
     install(ContentNegotiation) {
         jackson()
+    }
+}
+
+fun Application.configureRouting() {
+    routing {
+        graphqlSchema()
+        graphql()
     }
 }
 ```
