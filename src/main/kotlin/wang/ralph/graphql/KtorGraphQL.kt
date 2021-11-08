@@ -29,12 +29,16 @@ fun Application.configureGraphQL(
     )).build()
 
     routing {
-        post(graphQLUri) {
-            val request = call.receive<GraphQLRequest>()
-            // use localContext to pass through the ApplicationCall
-            val result = gql.execute(request.toExecutionBuilder().localContext(this.call))
-            call.respond(result.toSpecification())
-        }
+        graphql(graphQLUri)
+    }
+}
+
+fun Route.graphql(graphQLUri: String = "/graphql"): Route {
+    return post(graphQLUri) {
+        val request = call.receive<GraphQLRequest>()
+        // use localContext to pass through the ApplicationCall
+        val result = gql.execute(request.toExecutionBuilder().localContext(this.call))
+        call.respond(result.toSpecification())
     }
 }
 
