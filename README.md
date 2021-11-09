@@ -17,10 +17,9 @@ implementation("com.expediagroup:graphql-kotlin-schema-generator:5.2.0")
 
 ```kotlin
 embeddedServer(Netty) {
-    configureRouting()
-    // configure the `GET /playground` route
-    configureGraphQLPlayground()
-    // configure the `POST /graphql` route
+    // Currently, only the `jackson` can be used as serializer
+    configureSerialization()
+    // configure GraphQL
     configureGraphQL(
         // TODO: change to your package names to scan
         packageNames = listOf("wang.ralph"),
@@ -31,9 +30,6 @@ embeddedServer(Netty) {
         // TODO: could be changed to your custom scalar map
         scalars = Scalars.all, // (default)
     )
-    configureMonitoring()
-    // Currently, only the `jackson` can be used as serializer
-    configureSerialization()
     configureRouting()
 }.start(wait = true)
 
@@ -45,6 +41,7 @@ fun Application.configureSerialization() {
 
 fun Application.configureRouting() {
     routing {
+        graphqlPlayground()
         graphqlSchema()
         graphql()
     }

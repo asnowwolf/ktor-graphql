@@ -17,10 +17,9 @@ implementation("com.expediagroup:graphql-kotlin-schema-generator:5.2.0")
 
 ```kotlin
 embeddedServer(Netty) {
-    configureRouting()
-    // 配置 `GET /playground` 路由
-    configureGraphQLPlayground()
-    // 配置 `POST /graphql` 路由
+    // 目前，只支持用 `jackson` 作为 serializer
+    configureSerialization()
+    // 配置 GraphQL 基础信息
     configureGraphQL(
         // TODO: 改为你要在其中扫描所涉及类的包名
         packageNames = listOf("wang.ralph"),
@@ -30,17 +29,21 @@ embeddedServer(Netty) {
         mutations = listOf(UserMutation()),
         // TODO: 可以改为你要支持的标量类型映射表
         scalars = Scalars.all, // (default)
-        // TODO: 可以改为你要使用的 `/graphql` uri
-        graphQLUri = "/graphql", // (default)
     )
-    configureMonitoring()
-    // 目前，只支持用 `jackson` 作为 serializer
-    configureSerialization()
+    configureRouting()
 }.start(wait = true)
 
 fun Application.configureSerialization() {
     install(ContentNegotiation) {
         jackson()
+    }
+}
+
+fun Application.configureRouting() {
+    routing {
+        graphqlPlayground()
+        graphqlSchema()
+        graphql()
     }
 }
 ```
