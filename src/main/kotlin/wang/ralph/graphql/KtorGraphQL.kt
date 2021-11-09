@@ -53,7 +53,7 @@ fun Route.graphqlPlayground(
 fun Route.graphqlSchema(graphQLUri: String = "/graphql"): Route {
     return get(graphQLUri) {
         val request = call.receive<GraphQLRequest>()
-        if (request.operationName == "IntrospectionQuery" && request.query.startsWith("query IntrospectionQuery {")) {
+        if (isIntrospectionQuery(request)) {
             val result = gql.execute(request.toExecutionBuilder())
             call.respond(result.toSpecification())
         } else {
@@ -61,6 +61,9 @@ fun Route.graphqlSchema(graphQLUri: String = "/graphql"): Route {
         }
     }
 }
+
+private fun isIntrospectionQuery(request: GraphQLRequest) =
+    request.operationName == "IntrospectionQuery" && request.query.startsWith("query IntrospectionQuery {")
 
 fun Route.graphqlAll(
     graphQLUri: String = "/graphql",
