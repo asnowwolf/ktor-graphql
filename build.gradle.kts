@@ -17,6 +17,7 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation("io.ktor:ktor-server-core:$ktor_version")
+    implementation("io.ktor:ktor-client-json:$ktor_version")
     implementation("com.expediagroup:graphql-kotlin-schema-generator:5.2.0")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.0")
 

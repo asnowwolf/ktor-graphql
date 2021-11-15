@@ -17,7 +17,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-class GraphQLFeatureTest {
+class KtorGraphQLServerTest {
     @Test
     fun fetchPlaygroundHtml() {
         withTestApplication({
@@ -28,7 +28,7 @@ class GraphQLFeatureTest {
             handleRequest(HttpMethod.Get, "/playground").apply {
                 assertEquals(HttpStatusCode.OK, response.status())
                 assertEquals(ContentType.Text.Html, response.contentType().withoutParameters())
-                assertEquals(GraphQLFeatureTest::class.java.getResourceAsStream("playground-expected.html")!!
+                assertEquals(KtorGraphQLServerTest::class.java.getResourceAsStream("playground-expected.html")!!
                     .reader(Charsets.UTF_8)
                     .readText(), response.content)
             }
@@ -40,7 +40,7 @@ class GraphQLFeatureTest {
         withTestApplication({
             configureSerialization()
             configureGraphQL(
-                packageNames = listOf(GraphQLFeatureTest::class.java.packageName),
+                packageNames = listOf("wang.ralph.graphql"),
                 queries = listOf(UserQuery()),
             )
             routing {
@@ -69,7 +69,7 @@ class GraphQLFeatureTest {
         withTestApplication({
             configureSerialization()
             configureGraphQL(
-                packageNames = listOf(GraphQLFeatureTest::class.java.packageName),
+                packageNames = listOf("wang.ralph.graphql"),
                 queries = listOf(LogQuery()),
             )
             routing {
@@ -102,7 +102,7 @@ class GraphQLFeatureTest {
             withTestApplication({
                 configureSerialization()
                 configureGraphQL(
-                    packageNames = listOf(GraphQLFeatureTest::class.java.packageName),
+                    packageNames = listOf("wang.ralph.graphql"),
                     queries = listOf(LogQuery()),
                     scalars = emptyMap()
                 )
@@ -127,7 +127,7 @@ class GraphQLFeatureTest {
         withTestApplication({
             configureSerialization()
             configureGraphQL(
-                packageNames = listOf(GraphQLFeatureTest::class.java.packageName),
+                packageNames = listOf("wang.ralph.graphql"),
                 queries = listOf(UserQuery()),
             )
             routing {
@@ -159,7 +159,7 @@ class GraphQLFeatureTest {
         withTestApplication({
             configureSerialization()
             configureGraphQL(
-                packageNames = listOf(GraphQLFeatureTest::class.java.packageName),
+                packageNames = listOf("wang.ralph.graphql"),
                 queries = listOf(UserQuery()),
             )
             routing {
@@ -190,7 +190,7 @@ class GraphQLFeatureTest {
         withTestApplication({
             configureSerialization()
             configureGraphQL(
-                packageNames = listOf(GraphQLFeatureTest::class.java.packageName),
+                packageNames = listOf("wang.ralph.graphql"),
                 queries = listOf(UserQuery()),
                 mutations = listOf(UserMutation()),
             )
