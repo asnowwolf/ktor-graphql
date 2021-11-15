@@ -78,7 +78,7 @@ object BigDecimalCoercing : Coercing<BigDecimal, String> {
     }
 
     override fun serialize(dataFetcherResult: Any): String {
-        return (dataFetcherResult as BigDecimal).toString()
+        return dataFetcherResult.toString()
     }
 }
 
