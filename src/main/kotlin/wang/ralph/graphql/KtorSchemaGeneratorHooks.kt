@@ -33,6 +33,18 @@ object InstantCoercing : Coercing<Instant, String> {
     }
 }
 
+object UnitCoercing : Coercing<Unit, String> {
+    override fun parseValue(input: Any) {
+    }
+
+    override fun parseLiteral(input: Any) {
+    }
+
+    override fun serialize(dataFetcherResult: Any): String {
+        return ""
+    }
+}
+
 object DateCoercing : Coercing<Date, String> {
     override fun parseValue(input: Any): Date {
         return Date.from(Instant.parse(serialize(input)))
@@ -118,6 +130,12 @@ object Scalars {
         .coercing(InstantCoercing)
         .build()
 
+    val unit: GraphQLScalarType = GraphQLScalarType.newScalar()
+        .name("Unit")
+        .description("A type representing a kotlin.Unit")
+        .coercing(UnitCoercing)
+        .build()
+
     val date: GraphQLScalarType = GraphQLScalarType.newScalar()
         .name("Date")
         .description("A type representing a formatted ISO-8601 DateTime")
@@ -150,6 +168,7 @@ object Scalars {
 
     val all: Map<KClass<*>, GraphQLScalarType> =
         mapOf(
+            Unit::class to unit,
             Instant::class to instant,
             Date::class to date,
             BigDecimal::class to bigDecimal,
