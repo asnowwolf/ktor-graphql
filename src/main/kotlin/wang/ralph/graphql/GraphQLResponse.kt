@@ -3,7 +3,7 @@ package wang.ralph.graphql
 data class GraphQLResponseError(
     val message: String,
     val locations: List<GraphQLResponseErrorLocation>? = null,
-    val path: String? = null,
+    val path: List<String>? = null,
     val extensions: Map<String, Any>? = null,
 )
 
