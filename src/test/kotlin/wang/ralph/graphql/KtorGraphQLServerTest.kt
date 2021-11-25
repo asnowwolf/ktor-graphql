@@ -4,6 +4,7 @@ import com.expediagroup.graphql.generator.exceptions.TypeNotSupportedException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import io.ktor.application.*
+import io.ktor.auth.*
 import io.ktor.features.*
 import io.ktor.http.*
 import io.ktor.jackson.*
@@ -213,11 +214,72 @@ class KtorGraphQLServerTest {
             }
         }
     }
+
+    @Test
+    fun authorization() {
+        withTestApplication({
+            configureSerialization()
+            configureSecurity()
+            configureGraphQL(
+                packageNames = listOf("wang.ralph.graphql"),
+                queries = listOf(UserQuery()),
+            )
+            routing {
+                graphqlSchema()
+                // use optional to make /graphql
+                authenticate("basic", optional = true) {
+                    graphql()
+                }
+            }
+        }) {
+            //
+            sendGraphQLQuery(
+                """{
+                    |  users {
+                    |      id
+                    |      name
+                    |      groupId
+                    |  }
+                    |}""",
+            ).apply {
+                assertEquals(HttpStatusCode.OK, response.status())
+                assertEquals(ContentType.Application.Json, response.contentType().withoutParameters())
+                assertEquals("""{"data":{"users":[{"id":"11","name":"中文1","groupId":"1"},{"id":"12","name":"user2","groupId":"1"},{"id":"21","name":"中文2","groupId":"2"},{"id":"21","name":"user2","groupId":"2"},{"id":"31","name":"user3","groupId":"3"}]}}""",
+                    response.content)
+            }
+
+            sendGraphQLQuery(
+                """{
+                    |  currentUser {
+                    |      id
+                    |      name
+                    |      groupId
+                    |  }
+                    |}""",
+            ).apply {
+                assertEquals(HttpStatusCode.OK, response.status())
+                assertEquals(ContentType.Application.Json, response.contentType().withoutParameters())
+                assertEquals("""{"errors":[{"message":"Exception while fetching data (/currentUser) : null","locations":[{"line":2,"column":3}],"path":["currentUser"],"extensions":{"classification":"DataFetchingException"}}],"data":null}""",
+                    response.content)
+            }
+        }
+    }
+
 }
 
 private fun Application.configureSerialization() {
     install(ContentNegotiation) {
         jackson {
+        }
+    }
+}
+
+private fun Application.configureSecurity() {
+    authentication {
+        basic(name = "basic") {
+            validate { credentials ->
+                UserIdPrincipal(credentials.name)
+            }
         }
     }
 }

@@ -1,6 +1,9 @@
 package wang.ralph.graphql.schema
 
 import com.expediagroup.graphql.generator.scalars.ID
+import graphql.schema.DataFetchingEnvironment
+import io.ktor.auth.*
+import wang.ralph.graphql.call
 import wang.ralph.graphql.models.Group
 import wang.ralph.graphql.models.User
 import java.math.BigDecimal
@@ -8,6 +11,7 @@ import java.math.BigInteger
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.util.*
+import javax.security.auth.login.CredentialNotFoundException
 
 val groups = listOf(
     Group(ID("1"), "group1"),
@@ -33,6 +37,10 @@ val users = listOf(
 
 class UserQuery {
     fun users(): List<User> = users
+    fun currentUser(dfe: DataFetchingEnvironment): User {
+        val principal = dfe.call.principal<UserIdPrincipal>() ?: throw CredentialNotFoundException()
+        return User(ID(UUID.randomUUID().toString()), principal.name, null)
+    }
 }
 
 class GroupQuery {
