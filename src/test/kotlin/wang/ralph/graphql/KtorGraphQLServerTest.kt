@@ -45,7 +45,6 @@ class KtorGraphQLServerTest {
                 queries = listOf(UserQuery()),
             )
             routing {
-                graphqlSchema()
                 graphql()
             }
         }) {
@@ -74,7 +73,6 @@ class KtorGraphQLServerTest {
                 queries = listOf(LogQuery()),
             )
             routing {
-                graphqlSchema()
                 graphql()
             }
         }) {
@@ -108,7 +106,6 @@ class KtorGraphQLServerTest {
                     scalars = emptyMap()
                 )
                 routing {
-                    graphqlSchema()
                     graphql()
                 }
             }) {
@@ -132,7 +129,6 @@ class KtorGraphQLServerTest {
                 queries = listOf(UserQuery()),
             )
             routing {
-                graphqlSchema()
                 graphql()
             }
         }) {
@@ -164,7 +160,6 @@ class KtorGraphQLServerTest {
                 queries = listOf(UserQuery()),
             )
             routing {
-                graphqlSchema()
                 graphql()
             }
         }) {
@@ -196,7 +191,6 @@ class KtorGraphQLServerTest {
                 mutations = listOf(UserMutation()),
             )
             routing {
-                graphqlSchema()
                 graphql()
             }
         }) {
@@ -225,7 +219,6 @@ class KtorGraphQLServerTest {
                 queries = listOf(UserQuery()),
             )
             routing {
-                graphqlSchema()
                 // use optional to make /graphql
                 authenticate("basic", optional = true) {
                     graphql()

@@ -42,7 +42,6 @@ fun Application.configureSerialization() {
 fun Application.configureRouting() {
     routing {
         graphqlPlayground()
-        graphqlSchema()
         graphql()
     }
 }

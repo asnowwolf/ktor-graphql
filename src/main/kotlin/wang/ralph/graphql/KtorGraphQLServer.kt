@@ -12,7 +12,6 @@ import io.ktor.http.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
-import javax.security.auth.login.CredentialNotFoundException
 import kotlin.reflect.KClass
 
 lateinit var gql: GraphQL
@@ -50,21 +49,6 @@ fun Route.graphqlPlayground(
     }
 }
 
-fun Route.graphqlSchema(graphQLUri: String = "/graphql"): Route {
-    return get(graphQLUri) {
-        val request = call.receive<GraphQLRequest>()
-        if (isIntrospectionQuery(request)) {
-            val result = gql.execute(request.toExecutionBuilder())
-            call.respond(result.toSpecification())
-        } else {
-            throw CredentialNotFoundException()
-        }
-    }
-}
-
-private fun isIntrospectionQuery(request: GraphQLRequest) =
-    request.operationName == "IntrospectionQuery" && request.query.startsWith("query IntrospectionQuery {")
-
 fun Route.graphqlAll(
     graphQLUri: String = "/graphql",
     playgroundUri: String = "/playground",
@@ -72,7 +56,6 @@ fun Route.graphqlAll(
     subscriptionsEndpoint: String = "subscriptions",
 ): Route {
     graphqlPlayground(playgroundUri, graphQLEndpoint, subscriptionsEndpoint)
-    graphqlSchema(graphQLUri)
     graphql(graphQLUri)
     return this
 }
